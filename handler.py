@@ -11,6 +11,24 @@ import subprocess
 import tempfile
 import time
 
+# Ensure gsplat is installed (needs CUDA, may not have compiled during Docker build)
+try:
+    import gsplat
+    print(f"gsplat {gsplat.__version__} already installed")
+except ImportError:
+    print("gsplat not found, installing with CUDA support...")
+    subprocess.run(["pip", "install", "gsplat"], check=True)
+    print("gsplat installed successfully")
+
+# Ensure torch has CUDA — if CPU-only was installed during build, upgrade
+import torch
+if not torch.cuda.is_available():
+    print("CPU-only torch detected, installing CUDA version...")
+    subprocess.run(["pip", "install", "torch", "torchvision",
+                    "--index-url", "https://download.pytorch.org/whl/cu121"],
+                   check=True)
+    print("CUDA torch installed")
+
 import runpod
 
 
