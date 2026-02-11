@@ -1,26 +1,20 @@
-FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
 
 WORKDIR /app
 
-# Install system deps
-RUN apt-get update && apt-get install -y git wget && rm -rf /var/lib/apt/lists/*
+# Install Python 3.10 + system deps
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip python3-venv git wget && \
+    ln -sf /usr/bin/python3 /usr/bin/python && \
+    rm -rf /var/lib/apt/lists/*
 
 # Clone SHARP
 RUN git clone https://github.com/apple/ml-sharp.git /app/ml-sharp
 
-# Install SHARP deps in stages to isolate failures
+# Install all SHARP deps from its own requirements (no version conflicts)
 WORKDIR /app/ml-sharp
-
-# Install core deps first (no CUDA compilation needed)
-RUN pip install --no-cache-dir \
-    timm click imageio[ffmpeg] pillow-heif plyfile scipy matplotlib
-
-# Install gsplat (needs CUDA compilation — set build env vars)
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-RUN pip install --no-cache-dir gsplat
-
-# Install SHARP itself (editable install from the cloned repo)
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install RunPod SDK
 RUN pip install --no-cache-dir runpod
